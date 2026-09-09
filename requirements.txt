@@ -1,0 +1,16 @@
+# Core dependencies actually used by this project.
+requests>=2.31.0
+openpyxl>=3.1.0
+playwright>=1.49.0
+python-dotenv>=1.0.1
+
+# NOTE on pandas / BeautifulSoup / lxml:
+# The task brief listed these as a "preferred stack if necessary". This
+# project fetches CodeChef data from a JSON endpoint (see codechef.py), so
+# no HTML scraping (BeautifulSoup/lxml) is needed, and the student roster
+# is small enough that plain csv + dataclasses (utils.py) is simpler and
+# more transparent than pandas for this use case. If you want pandas for
+# heavier data wrangling later, uncomment below.
+# pandas>=2.0.0
+# beautifulsoup4>=4.12.0
+# lxml>=5.0.0

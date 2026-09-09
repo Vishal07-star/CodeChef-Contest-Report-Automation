@@ -1,0 +1,22 @@
+# Secrets
+.env
+.env.*
+students.csv
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+.review-venv/
+venv/
+env/
+
+# Generated output (contents ignored, folders kept via .gitkeep)
+reports/*.xlsx
+logs/*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

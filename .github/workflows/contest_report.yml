@@ -1,0 +1,92 @@
+name: CodeChef Contest Report
+
+# ---------------------------------------------------------------------------
+# How this workflow can be triggered
+# ---------------------------------------------------------------------------
+# 1. Manual (recommended, always available): go to the "Actions" tab on
+#    GitHub, choose "CodeChef Contest Report", click "Run workflow", and
+#    type the contest code or URL. This is the most reliable option
+#    because CodeChef gives no reliable, free, official signal that says
+#    "contest X has now ended" -- a human clicking "run" once the contest
+#    is over is far more reliable than guessing.
+#
+# Scheduled runs are deliberately disabled. The former schedule retried every
+# 30 minutes, which could repeatedly email the same completed report. Run this
+# workflow manually after obtaining/exporting the ranklist instead.
+# ---------------------------------------------------------------------------
+
+on:
+  workflow_dispatch:
+    inputs:
+      contest:
+        description: "Contest code or CodeChef contest URL (e.g. STARTERS200 or https://www.codechef.com/STARTERS200)"
+        required: true
+        type: string
+      send_email:
+        description: "Send the report by email as well?"
+        required: false
+        type: boolean
+        default: true
+      rankings_csv:
+        description: "Path to an exported rankings CSV in this repository"
+        required: true
+        type: string
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine contest code
+        id: contest
+        env:
+          CONTEST_INPUT: ${{ inputs.contest }}
+        run: |
+          printf 'value=%s\n' "$CONTEST_INPUT" >> "$GITHUB_OUTPUT"
+
+      - name: Generate contest report
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          TEACHER_EMAIL: ${{ secrets.TEACHER_EMAIL }}
+          SEND_EMAIL: ${{ inputs.send_email }}
+          CONTEST_CODE: ${{ steps.contest.outputs.value }}
+          RANKINGS_CSV: ${{ inputs.rankings_csv }}
+        run: |
+          EMAIL_FLAG="--no-email"
+          if [ "$SEND_EMAIL" = "true" ]; then
+            EMAIL_FLAG="--send-email"
+          fi
+          RANKINGS_FLAG=()
+          if [ -n "$RANKINGS_CSV" ]; then
+            RANKINGS_FLAG=(--rankings-csv "$RANKINGS_CSV")
+          fi
+          python main.py --contest "$CONTEST_CODE" "${RANKINGS_FLAG[@]}" "$EMAIL_FLAG"
+
+      - name: Upload report as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codechef-report
+          path: reports/*.xlsx
+          if-no-files-found: ignore
+
+      - name: Upload logs as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-logs
+          path: logs/*.log
+          if-no-files-found: ignore
